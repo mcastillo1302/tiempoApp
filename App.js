@@ -5,15 +5,43 @@ import {MagnifyingGlassIcon, CalendarDaysIcon} from 'react-native-heroicons/outl
 import {MapPinIcon} from 'react-native-heroicons/solid';
 import React, {useState} from 'react';
 
+import { debounce } from 'lodash';
+import { fetchLocations } from './api/weather';
+import { fetchWeatherForecast } from './api/weather';
+
 
 export default function App() {
 
   const [showSearch, toggleSearch] = useState(false);
-  const [locations, setLocations] = useState([1,2,3]);
+  const [locations, setLocations] = useState([]);
+  const [weather, setWeather] = useState({});
 
   const handleLocation = (loc) => {
-    console.log('ciudad',loc);
+    //console.log('ciudad',loc);
+    //setLoading(true);
+    toggleSearch(false);
+    setLocations([]);
+    fetchWeatherForecast({
+      cityName: loc.name,
+      days: '7'
+    }).then(data=>{
+      console.log('datos del tiempo: ', data);
+      //setLoading(false);
+      setWeather(data);
+      //storeData('city',loc.name);
+    })
   }
+
+  const handleSearch = search=>{
+    console.log('value: ',search);
+    if(search && search.length>2)
+      fetchLocations({cityName: search}).then(data=>{
+        console.log('got locations: ',data);
+        setLocations(data);
+      })
+  }
+
+  const {current, location} = weather;
 
   return (
     <View style={tw`flex-1 relative`}>
@@ -25,7 +53,9 @@ export default function App() {
 
             {
               showSearch?(
-                <TextInput placeholder='Buscar ciudad' placeholderTextColor={'gray'}
+                <TextInput 
+                onChangeText={handleSearch}
+                placeholder='Buscar ciudad' placeholderTextColor={'gray'}
                 style={tw` text-black pl-6 h-10 flex-1 text-base`}/>
               ):null
             }
@@ -48,7 +78,7 @@ export default function App() {
                         return(
                           <TouchableOpacity key={index} style={tw` flex-row items-center border-0 p-3 px-4 mb-1 border-b-2 border-b-gray-400`} onPress={()=>handleLocation(loc)}>
                             <MapPinIcon size="20" color="gray"/>
-                            <Text style={tw` text-black text-lg ml-2`}>Santa Cruz de la Sierra, Bolivia</Text>
+                            <Text style={tw` text-black text-lg ml-2`}>{loc?.name}, {loc?.country}</Text>
                           </TouchableOpacity>
                         );
                     }
@@ -71,20 +101,20 @@ export default function App() {
         <View style={tw` flex justify-around flex-1 mb-2`}>
 
             <Text style={tw` text-white text-center text-2xl font-bold`}>
-              Santa Cruz, 
+              {location?.name}, 
               <Text style={tw` text-lg font-semibold text-gray-300`}>
-                Bolivia
+              {" "+location?.country}
               </Text>
             </Text>
             <View style={tw` flex-row justify-center`}>
-              <Image source={require("./assets/images/partlycloudy.png")} style={tw` w-52 h-52`}/>
+              <Image source={{uri: 'https:'+current?.condition?.icon}} style={tw` w-52 h-52`}/>
             </View>
             <View style={tw` space-y-2`}> 
               <Text style={tw` text-center text-6xl text-white ml-5`}>
-                23°
+                {current?.temp_c} &#176;
               </Text>
               <Text style={tw` text-center text-white ml-5 tracking-widest`}>
-                Parcialmente Nublado
+                {current?.condition?.text}
               </Text>
             </View>
 
